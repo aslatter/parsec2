@@ -27,7 +27,7 @@ library {
     Text.ParserCombinators.Parsec.Pos,
     Text.ParserCombinators.Parsec.Prim,
     Text.ParserCombinators.Parsec
-  build-depends:	base
+  build-depends:	base<5
   extensions:	ExistentialQuantification
   if !impl(nhc98) {
     extensions:	PolymorphicComponents
