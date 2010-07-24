@@ -29,6 +29,10 @@ import Text.ParserCombinators.Parsec.Token
 -----------------------------------------------------------
 -- Styles: haskellStyle, javaStyle
 -----------------------------------------------------------               
+
+-- | This is a minimal token definition for Haskell style languages. It
+-- defines the style of comments, valid identifiers and case
+-- sensitivity. It does not define any reserved words or operators.
 haskellStyle :: LanguageDef st
 haskellStyle= emptyDef                      
                 { commentStart   = "{-"
@@ -44,6 +48,9 @@ haskellStyle= emptyDef
                 , caseSensitive  = True                                   
                 }         
                            
+-- | This is a minimal token definition for Java style languages. It
+-- defines the style of comments, valid identifiers and case
+-- sensitivity. It does not define any reserved words or operators.
 javaStyle  :: LanguageDef st
 javaStyle   = emptyDef
 		{ commentStart	 = "/*"
@@ -80,9 +87,12 @@ emptyDef    = LanguageDef
 -----------------------------------------------------------
 -- Haskell
 -----------------------------------------------------------               
+
+-- | A lexer for the haskell language.
 haskell :: TokenParser st
 haskell      = makeTokenParser haskellDef
 
+-- | The language definition for the Haskell language.
 haskellDef  :: LanguageDef st
 haskellDef   = haskell98Def
 	        { identLetter	 = identLetter haskell98Def <|> char '#'
@@ -93,6 +103,7 @@ haskellDef   = haskell98Def
     				   ]
                 }
 			    
+-- | The language definition for the language Haskell98.
 haskell98Def :: LanguageDef st
 haskell98Def = haskellStyle
                 { reservedOpNames= ["::","..","=","\\","|","<-","->","@","~","=>"]
@@ -110,9 +121,12 @@ haskell98Def = haskellStyle
 -----------------------------------------------------------
 -- Mondrian
 -----------------------------------------------------------               
+
+-- | A lexer for the mondrian language.
 mondrian :: TokenParser st
 mondrian    = makeTokenParser mondrianDef
 
+-- | The language definition for the language Mondrian.
 mondrianDef :: LanguageDef st
 mondrianDef = javaStyle
 		{ reservedNames = [ "case", "class", "default", "extends"

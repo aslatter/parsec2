@@ -60,9 +60,31 @@ import Control.Monad
 infix  0 <?>
 infixr 1 <|>
 
+-- | The parser @p <?> msg@ behaves as parser @p@, but whenever the
+-- parser @p@ fails /without consuming any input/, it replaces expect
+-- error messages with the expect error message @msg@.
+--
+-- This is normally used at the end of a set alternatives where we want
+-- to return an error message in terms of a higher level construct
+-- rather than returning all possible characters. For example, if the
+-- @expr@ parser from the 'try' example would fail, the error
+-- message is: '...: expecting expression'. Without the @(\<?>)@
+-- combinator, the message would be like '...: expecting \"let\" or
+-- letter', which is less friendly.
 (<?>) :: GenParser tok st a -> String -> GenParser tok st a
 p <?> msg           = label p msg
 
+-- | This combinator implements choice. The parser @p \<|> q@ first
+-- applies @p@. If it succeeds, the value of @p@ is returned. If @p@
+-- fails /without consuming any input/, parser @q@ is tried. This
+-- combinator is defined equal to the 'mplus' member of the 'MonadPlus'
+-- class and the ('Control.Applicative.<|>') member of 'Control.Applicative.Alternative'.
+--
+-- The parser is called /predictive/ since @q@ is only tried when
+-- parser @p@ didn't consume any input (i.e.. the look ahead is 1).
+-- This non-backtracking behaviour allows for both an efficient
+-- implementation of the parser combinators and the generation of good
+-- error messages.
 (<|>) :: GenParser tok st a -> GenParser tok st a -> GenParser tok st a
 p1 <|> p2           = mplus p1 p2
 
@@ -70,16 +92,27 @@ p1 <|> p2           = mplus p1 p2
 -----------------------------------------------------------
 -- User state combinators
 -----------------------------------------------------------
+
+-- | Returns the current user state.
 getState :: GenParser tok st st
 getState        = do{ state <- getParserState
                     ; return (stateUser state)
                     }
 
+-- | @setState st@ set the user state to @st@.
 setState :: st -> GenParser tok st ()
 setState st     = do{ updateParserState (\(State input pos _) -> State input pos st)
                     ; return ()
                     }
 
+-- | @updateState f@ applies function @f@ to the user state. Suppose
+-- that we want to count identifiers in a source, we could use the user
+-- state as:
+--
+-- >  expr  = do{ x <- identifier
+-- >            ; updateState (+1)
+-- >            ; return (Id x)
+-- >            }
 updateState :: (st -> st) -> GenParser tok st ()
 updateState f   = do{ updateParserState (\(State input pos user) -> State input pos (f user))
                     ; return ()
@@ -89,26 +122,33 @@ updateState f   = do{ updateParserState (\(State input pos user) -> State input 
 -----------------------------------------------------------
 -- Parser state combinators
 -----------------------------------------------------------
+
+-- | Returns the current source position. See also 'SourcePos'.
 getPosition :: GenParser tok st SourcePos
 getPosition         = do{ state <- getParserState; return (statePos state) }
 
+-- | Returns the current input
 getInput :: GenParser tok st [tok]
 getInput            = do{ state <- getParserState; return (stateInput state) }
 
 
+-- | @setPosition pos@ sets the current source position to @pos@.
 setPosition :: SourcePos -> GenParser tok st ()
 setPosition pos     = do{ updateParserState (\(State input _ user) -> State input pos user)
                         ; return ()
                         }
                         
+-- | @setInput input@ continues parsing with @input@.
 setInput :: [tok] -> GenParser tok st ()
 setInput input      = do{ updateParserState (\(State _ pos user) -> State input pos user)
                         ; return ()
                         }
 
+-- | Returns the full parser state as a 'State' record.
 getParserState	    :: GenParser tok st (State tok st)
 getParserState      =  updateParserState id    
 
+-- | @setParserState st@ set the full parser state to @st@.
 setParserState	    :: State tok st -> GenParser tok st (State tok st)
 setParserState st   = updateParserState (const st)
 
@@ -147,6 +187,9 @@ parseFromFile p fname
         ; return (parse p fname input)
         }
 
+-- | The expression @parseTest p input@ applies a parser @p@ against
+-- input @input@ and prints the result to stdout. Used for testing
+-- parsers.
 parseTest :: Show a => GenParser tok () a -> [tok] -> IO ()
 parseTest p input
     = case (runParser p () "" input) of
@@ -155,12 +198,31 @@ parseTest p input
                       }
         Right x  -> print x
 
-
+-- | @parse p filePath input@ runs a parser @p@ without user
+-- state. The @filePath@ is only used in error messages and may be the
+-- empty string. Returns either a 'ParseError' ('Left')
+-- or a value of type @a@ ('Right').
+--
+-- >  main    = case (parse numbers "" "11, 2, 43") of
+-- >             Left err  -> print err
+-- >             Right xs  -> print (sum xs)
+-- >
+-- >  numbers = commaSep integer
 parse :: GenParser tok () a -> SourceName -> [tok] -> Either ParseError a
 parse p name input
     = runParser p () name input
 
-
+-- | The most general way to run a parser. @runParser p state filePath
+-- input@ runs parser @p@ on the input list of tokens @input@,
+-- obtained from source @filePath@ with the initial user state @st@.
+-- The @filePath@ is only used in error messages and may be the empty
+-- string. Returns either a 'ParseError' ('Left') or a
+-- value of type @a@ ('Right').
+--
+-- >  parseFromFile p fname
+-- >    = do{ input <- readFile fname
+-- >        ; return (runParser p () fname input)
+-- >        }
 runParser :: GenParser tok st a -> st -> SourceName -> [tok] -> Either ParseError a
 runParser p st name input
     = case parserReply (runP p (State input (initialPos name) st)) of
@@ -249,6 +311,9 @@ instance MonadPlus (GenParser tok st) where
 pzero :: GenParser tok st a
 pzero = parsecZero
 
+-- | @parsecZero@ always fails without consuming any input. @parsecZero@ is defined
+-- equal to the 'mzero' member of the 'MonadPlus' class and to the 'Control.Applicative.empty' member
+-- of the 'Control.Applicative.Applicative' class.
 parsecZero :: GenParser tok st a
 parsecZero
     = Parser (\state -> Empty (Error (unknownError state)))
@@ -279,10 +344,36 @@ parsecPlus (Parser p1) (Parser p2)
 -}
 
 
------------------------------------------------------------
--- Primitive Parsers: 
---  try, token(Prim), label, unexpected and updateState
------------------------------------------------------------
+-- | The parser @try p@ behaves like parser @p@, except that it
+-- pretends that it hasn't consumed any input when an error occurs.
+--
+-- This combinator is used whenever arbitrary look ahead is needed.
+-- Since it pretends that it hasn't consumed any input when @p@ fails,
+-- the ('<|>') combinator will try its second alternative even when the
+-- first parser failed while consuming input.
+--
+-- The @try@ combinator can for example be used to distinguish
+-- identifiers and reserved words. Both reserved words and identifiers
+-- are a sequence of letters. Whenever we expect a certain reserved
+-- word where we can also expect an identifier we have to use the @try@
+-- combinator. Suppose we write:
+--
+-- >  expr        = letExpr <|> identifier <?> "expression"
+-- >
+-- >  letExpr     = do{ string "let"; ... }
+-- >  identifier  = many1 letter
+--
+-- If the user writes \"lexical\", the parser fails with: @unexpected
+-- \'x\', expecting \'t\' in \"let\"@. Indeed, since the ('<|>') combinator
+-- only tries alternatives when the first alternative hasn't consumed
+-- input, the @identifier@ parser is never tried (because the prefix
+-- \"le\" of the @string \"let\"@ parser is already consumed). The
+-- right behaviour can be obtained by adding the @try@ combinator:
+--
+-- >  expr        = letExpr <|> identifier <?> "expression"
+-- >
+-- >  letExpr     = do{ try (string "let"); ... }
+-- >  identifier  = many1 letter
 try :: GenParser tok st a -> GenParser tok st a
 try (Parser p)
     = Parser (\state@(State input pos user) ->     
@@ -292,7 +383,22 @@ try (Parser p)
           empty                 -> empty
       )
 
-     
+-- | The parser @token showTok posFromTok testTok@ accepts a token @t@
+-- with result @x@ when the function @testTok t@ returns @'Just' x@. The
+-- source position of the @t@ should be returned by @posFromTok t@ and
+-- the token can be shown using @showTok t@.
+--
+-- This combinator is expressed in terms of 'tokenPrim'.
+-- It is used to accept user defined token streams. For example,
+-- suppose that we have a stream of basic tokens tupled with source
+-- positions. We can than define a parser that accepts single tokens as:
+--
+-- >  mytoken x
+-- >    = token showTok posFromTok testTok
+-- >    where
+-- >      showTok (pos,t)     = show t
+-- >      posFromTok (pos,t)  = pos
+-- >      testTok (pos,t)     = if x == t then Just t else Nothing
 token :: (tok -> String) -> (tok -> SourcePos) -> (tok -> Maybe a) -> GenParser tok st a    
 token show tokpos test
   = tokenPrim show nextpos test
@@ -300,6 +406,22 @@ token show tokpos test
     nextpos _ _   (tok:toks)  = tokpos tok
     nextpos _ tok []          = tokpos tok
 
+-- | The parser @token showTok nextPos testTok@ accepts a token @t@
+-- with result @x@ when the function @testTok t@ returns @'Just' x@. The
+-- token can be shown using @showTok t@. The position of the /next/
+-- token should be returned when @nextPos@ is called with the current
+-- source position @pos@, the current token @t@ and the rest of the
+-- tokens @toks@, @nextPos pos t toks@.
+--
+-- This is the most primitive combinator for accepting tokens. For
+-- example, the 'Text.Parsec.Char.char' parser could be implemented as:
+--
+-- >  char c
+-- >    = tokenPrim showChar nextPos testChar
+-- >    where
+-- >      showChar x        = "'" ++ x ++ "'"
+-- >      testChar x        = if x == c then Just x else Nothing
+-- >      nextPos pos x xs  = updatePosChar pos x
 tokenPrim :: (tok -> String) -> (SourcePos -> tok -> [tok] -> SourcePos) -> (tok -> Maybe a) -> GenParser tok st a
 tokenPrim show nextpos test
     = tokenPrimEx show nextpos Nothing test
@@ -358,12 +480,19 @@ labels (Parser p) msgs
       )
 
 
+-- | @updateParserState f@ applies function @f@ to the parser state.
 updateParserState :: (State tok st -> State tok st) -> GenParser tok st (State tok st)
 updateParserState f 
     = Parser (\state -> let newstate = f state
                         in Empty (Ok state newstate (unknownError newstate)))
     
-    
+-- | The parser @unexpected msg@ always fails with an unexpected error
+-- message @msg@ without consuming any input.
+--
+-- The parsers 'fail', ('<?>') and @unexpected@ are the three parsers
+-- used to generate error messages. Of these, only ('<?>') is commonly
+-- used. For an example of the use of @unexpected@, see the definition
+-- of 'Text.Parsec.Combinator.notFollowedBy'.
 unexpected :: String -> GenParser tok st a
 unexpected msg
     = Parser (\state -> Empty (Error (newErrorMessage (UnExpect msg) (statePos state))))
@@ -382,12 +511,24 @@ unknownError state        = newErrorUnknown (statePos state)
 -- if many and skipMany are not defined as primitives,
 -- they will overflow the stack on large inputs
 -----------------------------------------------------------    
+
+-- | @many p@ applies the parser @p@ /zero/ or more times. Returns a
+--    list of the returned values of @p@.
+--
+-- >  identifier  = do{ c  <- letter
+-- >                  ; cs <- many (alphaNum <|> char '_')
+-- >                  ; return (c:cs)
+-- >                  }
 many :: GenParser tok st a -> GenParser tok st [a]
 many p
   = do{ xs <- manyAccum (:) p
       ; return (reverse xs)
       }
 
+-- | @skipMany p@ applies the parser @p@ /zero/ or more times, skipping
+-- its result.
+--
+-- >  spaces  = skipMany space
 skipMany :: GenParser tok st a -> GenParser tok st ()
 skipMany p
   = do{ manyAccum (\x xs -> []) p
