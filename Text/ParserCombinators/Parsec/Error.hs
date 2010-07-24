@@ -4,7 +4,7 @@
 -- Copyright   :  (c) Daan Leijen 1999-2001
 -- License     :  BSD-style (see the file libraries/parsec/LICENSE)
 -- 
--- Maintainer  :  daan@cs.uu.nl
+-- Maintainer  :  Antoine Latter <aslatter@gmail.com>
 -- Stability   :  provisional
 -- Portability :  portable
 --
