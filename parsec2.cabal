@@ -5,7 +5,8 @@ license:	BSD3
 license-file:	LICENSE
 author:		Daan Leijen <daan@cs.uu.nl>
 maintainer:	Antoine Latter <aslatter@gmail.com>
-homepage:	http://www.cs.uu.nl/~daan/parsec.html
+homepage:	https://github.com/aslatter/parsec2
+bug-reports:    https://github.com/aslatter/parsec2/issues
 category:	Parsing
 synopsis:	Monadic parser combinators
 description:
@@ -39,11 +40,6 @@ library {
   }
 }
 source-repository head {
-  type:     darcs
-  location: http://code.haskell.org/parsec2/parsec2
-}
-source-repository this {
-  type:     darcs
-  location: http://code.haskell.org/parsec2/parsec2
-  tag:      1.0.0
+  type:     git
+  location: https://github.com/aslatter/parsec2
 }
