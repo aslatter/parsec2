@@ -20,6 +20,7 @@ description:
 build-type:     Simple
 extra-source-files: CHANGELOG
 cabal-version:      >= 1.6
+tested-with:    GHC >= 7.6 && < 7.11
 library {
   exposed-modules:
     Text.ParserCombinators.Parsec.Error,
