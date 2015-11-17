@@ -42,6 +42,7 @@ module Text.ParserCombinators.Parsec.Prim
 import Prelude
 import Text.ParserCombinators.Parsec.Pos
 import Text.ParserCombinators.Parsec.Error
+import qualified Control.Applicative as A
 import Control.Monad
 
 {-# INLINE parsecMap    #-}
@@ -254,7 +255,6 @@ parsecMap f (Parser p)
             Ok x state err -> let fx = f x 
                               in seq fx (Ok fx state err)
             Error err      -> Error err
-           
 
 -----------------------------------------------------------
 -- Monad: return, sequence (>>=) and fail
@@ -328,7 +328,6 @@ parsecPlus (Parser p1) (Parser p2)
           other             -> other
       )
 
-
 {- 
 -- variant that favors a consumed reply over an empty one, even it is not the first alternative.
           empty@(Empty reply) -> case reply of
@@ -342,6 +341,18 @@ parsecPlus (Parser p1) (Parser p2)
                                        consumed    -> consumed
           consumed  -> consumed
 -}
+
+-----------------------------------------------------------
+-- Bonus instances
+-----------------------------------------------------------
+
+instance A.Applicative (GenParser tok st) where
+  pure x = return x
+  mf <*> mx = mf `ap` mx
+
+instance A.Alternative (GenParser tok st) where
+  empty = mzero
+  ma <|> mb = ma `mplus` mb
 
 
 -- | The parser @try p@ behaves like parser @p@, except that it
