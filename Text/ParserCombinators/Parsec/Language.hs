@@ -40,9 +40,9 @@ haskellStyle= emptyDef
                 , commentLine    = "--"
                 , nestedComments = True
                 , identStart     = letter
-                , identLetter	 = alphaNum <|> oneOf "_'"
-                , opStart	 = opLetter haskellStyle
-                , opLetter	 = oneOf ":!#$%&*+./<=>?@\\^|-~"              
+                , identLetter    = alphaNum <|> oneOf "_'"
+                , opStart        = opLetter haskellStyle
+                , opLetter       = oneOf ":!#$%&*+./<=>?@\\^|-~"              
                 , reservedOpNames= []
                 , reservedNames  = []
                 , caseSensitive  = True                                   
@@ -53,16 +53,16 @@ haskellStyle= emptyDef
 -- sensitivity. It does not define any reserved words or operators.
 javaStyle  :: LanguageDef st
 javaStyle   = emptyDef
-		{ commentStart	 = "/*"
-		, commentEnd	 = "*/"
-		, commentLine	 = "//"
-		, nestedComments = True
-		, identStart	 = letter
-		, identLetter	 = alphaNum <|> oneOf "_'"		
-		, reservedNames  = []
-		, reservedOpNames= []	
-                , caseSensitive  = False				  
-		}
+                { commentStart   = "/*"
+                , commentEnd     = "*/"
+                , commentLine    = "//"
+                , nestedComments = True
+                , identStart     = letter
+                , identLetter    = alphaNum <|> oneOf "_'"
+                , reservedNames  = []
+                , reservedOpNames= []
+                , caseSensitive  = False
+                }
 
 -----------------------------------------------------------
 -- minimal language definition
@@ -95,14 +95,14 @@ haskell      = makeTokenParser haskellDef
 -- | The language definition for the Haskell language.
 haskellDef  :: LanguageDef st
 haskellDef   = haskell98Def
-	        { identLetter	 = identLetter haskell98Def <|> char '#'
-	        , reservedNames	 = reservedNames haskell98Def ++ 
-    				   ["foreign","import","export","primitive"
-    				   ,"_ccall_","_casm_"
-    				   ,"forall"
-    				   ]
+                { identLetter    = identLetter haskell98Def <|> char '#'
+                , reservedNames  = reservedNames haskell98Def ++ 
+                                   ["foreign","import","export","primitive"
+                                   ,"_ccall_","_casm_"
+                                   ,"forall"
+                                   ]
                 }
-			    
+
 -- | The language definition for the language Haskell98.
 haskell98Def :: LanguageDef st
 haskell98Def = haskellStyle
@@ -129,10 +129,10 @@ mondrian    = makeTokenParser mondrianDef
 -- | The language definition for the language Mondrian.
 mondrianDef :: LanguageDef st
 mondrianDef = javaStyle
-		{ reservedNames = [ "case", "class", "default", "extends"
-				  , "import", "in", "let", "new", "of", "package"
-				  ]	
-                , caseSensitive  = True				  
-		}
+                { reservedNames = [ "case", "class", "default", "extends"
+                                  , "import", "in", "let", "new", "of", "package"
+                                  ]
+                , caseSensitive  = True
+                }
 
-				
+

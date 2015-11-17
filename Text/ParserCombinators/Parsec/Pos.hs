@@ -35,8 +35,8 @@ type Column         = Int
 -- a column number. @SourcePos@ is an instance of the 'Show', 'Eq' and
 -- 'Ord' class.
 data SourcePos      = SourcePos SourceName !Line !Column
-		     deriving (Eq,Ord)
-		
+                    deriving (Eq,Ord)
+
 -- | Create a new 'SourcePos' with the given source name,
 -- line number and column number.
 newPos :: SourceName -> Line -> Column -> SourcePos

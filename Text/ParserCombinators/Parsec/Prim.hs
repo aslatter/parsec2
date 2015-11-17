@@ -146,12 +146,12 @@ setInput input      = do{ updateParserState (\(State _ pos user) -> State input 
                         }
 
 -- | Returns the full parser state as a 'State' record.
-getParserState	    :: GenParser tok st (State tok st)
-getParserState      =  updateParserState id    
+getParserState    :: GenParser tok st (State tok st)
+getParserState    =  updateParserState id    
 
 -- | @setParserState st@ set the full parser state to @st@.
-setParserState	    :: State tok st -> GenParser tok st (State tok st)
-setParserState st   = updateParserState (const st)
+setParserState    :: State tok st -> GenParser tok st (State tok st)
+setParserState st = updateParserState (const st)
 
 
 
