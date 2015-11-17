@@ -39,7 +39,6 @@ library {
       Text.ParserCombinators.Parsec.Language,
       Text.ParserCombinators.Parsec.Token
   }
-  options-ghc:  -Wall
 }
 source-repository head {
   type:     git
