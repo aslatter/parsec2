@@ -1,9 +1,0 @@
-parsec2-1.0.0 (Changes from parsec-2.1.0.1)
-
-Sat Jul 24 12:17:43 CDT 2010  Antoine Latter <aslatter@gmail.com>
-  * add dcoumentation done for parsec-3
-
-Wed Jun  9 22:23:52 CDT 2010  Antoine Latter <aslatter@gmail.com>
-  * in Parsec.Token, sort names after accounting for case sensitivity, not before
-  from: Greg Fitzgerald
-

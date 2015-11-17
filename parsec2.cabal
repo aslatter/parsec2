@@ -18,7 +18,7 @@ description:
     This package is a maintained fork of version 2.1 of the parsec
     package, intended to preserve its simplicity and portability.
 build-type:     Simple
-extra-source-files: CHANGELOG
+extra-source-files: CHANGES.md
 cabal-version:      >= 1.6
 tested-with:    GHC >= 7.6 && < 7.11
 library {
